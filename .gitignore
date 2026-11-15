@@ -1,0 +1,6 @@
+# os
+.DS_Store
+._*
+desktop.ini
+
+__pycache__
