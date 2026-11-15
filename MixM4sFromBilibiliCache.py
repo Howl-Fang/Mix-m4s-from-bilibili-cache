@@ -1,27 +1,32 @@
 #Mix By HF
 #Multi-Process
 
-from os import system, getcwd, chdir, environ, path
+from os import system, getcwd, chdir, path, makedirs
 from glob import glob
 import json
+import shutil
+import subprocess
+import sys
 from time import sleep
 from datetime import datetime
-import winreg
-from filelock import FileLock
-import subprocess
-#ToolDir=r'D:\HF_Doc\Program\mkvtoolnix\mkvmerge.exe'
-with open(environ['appdata']+f"\\MixM4sFromBilibiliCache",encoding="utf-8") as f:
-    ToolDir=f.read()
-    # MetaDataToolDir=ToolDir[:-12]+'mkvpropedit.exe'
-    MetaDataToolDir = "mkvpropedit.exe".join(ToolDir.rsplit("mkvmerge.exe",1))
-    # print (ToolDir)
+if sys.platform.startswith("win"):
+    import winreg
 special_chars=r'\/:*?"><=|'
 a=datetime.now().strftime("%Y-%m-%d %H%M%S")
 # a=str(datetime.now().date())+f"_{datetime.now().hour}-{datetime.now().minute}-{datetime.now().second}"
-downpath = winreg.QueryValueEx(winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders"),"{374DE290-123F-4565-9164-39C4925E467B}")[0] + "\\"+a
-LOG=getcwd()+"\\"+"Log_"+a+".txt"
-WARN=getcwd()+"\\"+"Warn_"+a+".txt"
-ERROR=getcwd()+"\\"+"Error_"+a+".txt"
+
+def DownloadsPath():
+    if sys.platform.startswith("win"):
+        try:
+            return winreg.QueryValueEx(winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders"),"{374DE290-123F-4565-9164-39C4925E467B}")[0]
+        except Exception:
+            pass
+    return path.join(path.expanduser("~"),"Downloads")
+
+downpath = path.join(DownloadsPath(),a)
+LOG=path.join(getcwd(),"Log_"+a+".txt")
+WARN=path.join(getcwd(),"Warn_"+a+".txt")
+ERROR=path.join(getcwd(),"Error_"+a+".txt")
 TT={1:"Info",2:"Waring",3:"Error"}
 
 def Log(typer,chars):
@@ -31,63 +36,33 @@ def Log(typer,chars):
     c=TT[typer]+f"[{a}]"+": "+chars+"\n"
     for t in range(5):
         try:
-            Lock=FileLock(LOG)
             with open(LOG,"a",encoding="utf-8") as f:
                 f.write(c)
-            Lock.release
             if typer>=2:
-                Lock=FileLock(WARN)
                 with open(WARN,"a",encoding="utf-8") as f:
                     f.write(c)
-                Lock.release
                 if typer==3:
-                    Lock=FileLock(ERROR)
                     with open(ERROR,"a",encoding="utf-8") as f:
                         f.write(c)
-                    Lock.release
             b=False
             break
         except:
-            Log(2,f'"{TT[typer]}: {chars}"')
             sleep(1)
     if b:
         raise BaseException
 
 def WorkList():
-    '''
-    lit=[]
-    for root, dirs, files in walk(getcwd()):
-        for file in files:
-            t=path.join(root, file)
-            if t.endswith('video.m4s'):
-                lit.append(t)
-    '''
-    '''
-    Path=getcwd()+"\\**\\video.m4s"
-    prelit=iglob(Path,recursive=True)
-    lit=[]
-    '''
-    Path=getcwd()+"\\**\\video.m4s"
+    Path=path.join(getcwd(),"**","video.m4s")
     prelit=glob(Path,recursive=True)
-    '''
-    lit=[]
-    for i in prelit:
-        if i.endswith("video.m4s"):
-            lit.append(i)
-    '''
     lit=[]
     for i in prelit:
         lit.append(i)
     return lit
 
 def Dos(Dir):
-    chdir(Dir[:-9])#去掉‘video.m4s’
-    '''
-    with open(environ['appdata']+f"\\MixM4sFromBilibiliCache",encoding="utf-8") as f:
-        ToolDir=f.read()
-    '''
+    chdir(path.dirname(Dir))#去掉‘video.m4s’
 
-    with open(r"..\entry.json","r",encoding="utf-8") as f:
+    with open(path.join("..","entry.json"),"r",encoding="utf-8") as f:
         rdata=json.load(f)
         bvid=str(rdata["bvid"])
         try:
@@ -101,7 +76,7 @@ def Dos(Dir):
                 title22=title2.replace(title1,"")
                 title20=title2.replace(title22,"")
                 title=title20+title21+title22
-                Log(1,1,f"Titled [{title}] with Method2 at {Dir}")
+                Log(1,f"Titled [{title}] with Method2 at {Dir}")
         except:
             title=str(rdata.get("title"))
             Log(1,f"Titled [{title}] with Method3 at {Dir}")
@@ -112,52 +87,56 @@ def Dos(Dir):
     #system(f"rename mixed.mkv {title}.mkv")
     title1=title
 
-    # command = ToolDir+r' --ui-language zh_CN --output ^".\Mixed.mkv^" --language 0:und ^"^(^" ^".\audio.m4s^" ^"^)^" --language 0:und ^"^(^" ^".\video.m4s^" ^"^)^" --track-order 0:0,1:0'
-    # system(ToolDir+r' --ui-language zh_CN --output ^".\Mixed.mkv^" --language 0:und ^"^(^" ^".\audio.m4s^" ^"^)^" --language 0:und ^"^(^" ^".\video.m4s^" ^"^)^" --track-order 0:0,1:0')
-    system('"'+ToolDir+r' --ui-language zh_CN --output ^".\Mixed.mkv^" --language 0:und ^"^(^" ^".\audio.m4s^" ^"^)^" --language 0:und ^"^(^" ^".\video.m4s^" ^"^)^" --track-order 0:0,1:0'+'"')
-    # command2 = [
-    #     ToolDir,
-    #     '--ui-language', 'zh_CN',
-    #     '--output', r'^".\Mixed.mkv^"'
-    #     '--language', '0:und', r'^"^(^" ^".\audio.m4s^" ^"^)^"' 
-    #     '--language', '0:und', r'^"^(^" ^".\video.m4s^" ^"^)^"',
-    #     '--track-order', '0:0,1:0'
-    # ]
-    # Log(1,subprocess.run(command2, capture_output=True, text=True, cwd=getcwd()))
-
     for char in special_chars:
         title = title.replace(char," ")
 
-    m='"'+MetaDataToolDir+r' ^".\Mixed.mkv^" --set "title='+bvid+' '+title+'"'
-    print(m)
-    system(m)
-    
     if len(title1)!=len(title):
         Log(1,f"Deleted Special Characters from [{title1}] to [{title}] at {Dir}")
-    f=f'move mixed.mkv "{downpath}\\{title}.mkv"'
-    print(f)
-    system(f)
+
+    command=[
+        "ffmpeg","-y",
+        "-i","audio.m4s",
+        "-i","video.m4s",
+        "-map","0:a:0",
+        "-map","1:v:0",
+        "-c","copy",
+        "-metadata",f"title={bvid} {title}",
+        "-metadata:s:a:0","language=und",
+        "-metadata:s:v:0","language=und",
+        "Mixed.mkv"
+    ]
+    print(command)
+    result=subprocess.run(command,capture_output=True,text=True)
+    if result.returncode!=0:
+        raise Exception("ffmpeg: "+result.stderr.strip()[-1000:])
+
+    f=path.join(downpath,title+".mkv")
+    print(f'Move Mixed.mkv to "{f}"')
+    shutil.move("Mixed.mkv",f)
 
 Wlist=WorkList()
 Log(1,Wlist)
 if(not path.exists(downpath)):
-    system(f"md \"{downpath}\"")
+    makedirs(downpath)
 for i in Wlist:
     try:
         Dos(i)
     except Exception as EX:
         Log(3,i+" -- "+str(EX))
-system("pause")
+if sys.platform.startswith("win"):
+    system("pause")
+else:
+    input("Press Enter to continue...")
 
 '''
-这里使用mkvtoolnix进行混合, 需要修改路径
+这里使用ffmpeg进行混合, 需要ffmpeg已经加入环境变量PATH
 用replace方法替换掉文件名中不能出现的特殊字符
-winreg调取downloads文件夹位置, {374DE290-123F-4565-9164-39C4925E467B}代表下载文件夹目录
+Windows用winreg调取downloads文件夹位置, {374DE290-123F-4565-9164-39C4925E467B}代表下载文件夹目录
+macOS/Linux使用~/Downloads
 上一级文件夹的json文件包含视频名称
-系统move可以在移动的同时重命名
+shutil.move可以在移动的同时重命名
 os.chdir(path)函数用于更改当前工作目录到指定的目录
 os.getcwd()函数用来遍历文件
-os.environ['appdata']获得其位置
 
 975604735
 └─c_411035633
