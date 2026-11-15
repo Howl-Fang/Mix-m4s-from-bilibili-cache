@@ -1,8 +1,8 @@
 #Mix By HF
 #Multi-Process
 
-from os import system, walk, path, getcwd, chdir, environ
-from glob import iglob, glob
+from os import system, getcwd, chdir, environ, path
+from glob import glob
 import json
 from time import sleep
 from datetime import datetime
@@ -15,6 +15,7 @@ with open(environ['appdata']+f"\\MixM4sFromBilibiliCache",encoding="utf-8") as f
     # print (ToolDir)
 special_chars=r'\/:*?"><=|'
 a=str(datetime.now().date())+f"_{datetime.now().hour}-{datetime.now().minute}-{datetime.now().second}"
+downpath = winreg.QueryValueEx(winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders"),"{374DE290-123F-4565-9164-39C4925E467B}")[0] + "\\"+a
 LOG=getcwd()+"\\"+"Log_"+a+".txt"
 WARN=getcwd()+"\\"+"Warn_"+a+".txt"
 ERROR=getcwd()+"\\"+"Error_"+a+".txt"
@@ -123,13 +124,14 @@ def Dos(Dir):
         title = title.replace(char," ")
     if len(title1)!=len(title):
         Log(1,f"Deleted Special Characters from [{title1}] to [{title}] at {Dir}")
-    downpath = winreg.QueryValueEx(winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders"),"{374DE290-123F-4565-9164-39C4925E467B}")[0]
     f=f'move mixed.mkv "{downpath}\\{title}.mkv"'
     print(f)
     system(f)
 
 Wlist=WorkList()
 Log(1,Wlist)
+if(not path.exists(downpath)):
+    system(f"md {downpath}")
 for i in Wlist:
     try:
         Dos(i)
