@@ -12,9 +12,12 @@ import subprocess
 #ToolDir=r'D:\HF_Doc\Program\mkvtoolnix\mkvmerge.exe'
 with open(environ['appdata']+f"\\MixM4sFromBilibiliCache",encoding="utf-8") as f:
     ToolDir=f.read()
+    # MetaDataToolDir=ToolDir[:-12]+'mkvpropedit.exe'
+    MetaDataToolDir = "mkvpropedit.exe".join(ToolDir.rsplit("mkvmerge.exe",1))
     # print (ToolDir)
 special_chars=r'\/:*?"><=|'
-a=str(datetime.now().date())+f"_{datetime.now().hour}-{datetime.now().minute}-{datetime.now().second}"
+a=datetime.now().strftime("%Y-%m-%d %H%M%S")
+# a=str(datetime.now().date())+f"_{datetime.now().hour}-{datetime.now().minute}-{datetime.now().second}"
 downpath = winreg.QueryValueEx(winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders"),"{374DE290-123F-4565-9164-39C4925E467B}")[0] + "\\"+a
 LOG=getcwd()+"\\"+"Log_"+a+".txt"
 WARN=getcwd()+"\\"+"Warn_"+a+".txt"
@@ -83,22 +86,10 @@ def Dos(Dir):
     with open(environ['appdata']+f"\\MixM4sFromBilibiliCache",encoding="utf-8") as f:
         ToolDir=f.read()
     '''
-    # command = ToolDir+r' --ui-language zh_CN --output ^".\Mixed.mkv^" --language 0:und ^"^(^" ^".\audio.m4s^" ^"^)^" --language 0:und ^"^(^" ^".\video.m4s^" ^"^)^" --track-order 0:0,1:0'
-    # system(ToolDir+r' --ui-language zh_CN --output ^".\Mixed.mkv^" --language 0:und ^"^(^" ^".\audio.m4s^" ^"^)^" --language 0:und ^"^(^" ^".\video.m4s^" ^"^)^" --track-order 0:0,1:0')
-    system('"'+ToolDir+r' --ui-language zh_CN --output ^".\Mixed.mkv^" --language 0:und ^"^(^" ^".\audio.m4s^" ^"^)^" --language 0:und ^"^(^" ^".\video.m4s^" ^"^)^" --track-order 0:0,1:0'+'"')
-    # command2 = [
-    #     ToolDir,
-    #     '--ui-language', 'zh_CN',
-    #     '--output', r'^".\Mixed.mkv^"'
-    #     '--language', '0:und', r'^"^(^" ^".\audio.m4s^" ^"^)^"' 
-    #     '--language', '0:und', r'^"^(^" ^".\video.m4s^" ^"^)^"',
-    #     '--track-order', '0:0,1:0'
-    # ]
-    # Log(1,subprocess.run(command2, capture_output=True, text=True, cwd=getcwd()))
 
-    #sleep(5)
     with open(r"..\entry.json","r",encoding="utf-8") as f:
         rdata=json.load(f)
+        bvid=str(rdata["bvid"])
         try:
             title1=str(rdata['title'])
             title2=str(rdata['page_data']['download_subtitle'])
@@ -120,8 +111,27 @@ def Dos(Dir):
                 title=str(rdata.get("title"))
     #system(f"rename mixed.mkv {title}.mkv")
     title1=title
+
+    # command = ToolDir+r' --ui-language zh_CN --output ^".\Mixed.mkv^" --language 0:und ^"^(^" ^".\audio.m4s^" ^"^)^" --language 0:und ^"^(^" ^".\video.m4s^" ^"^)^" --track-order 0:0,1:0'
+    # system(ToolDir+r' --ui-language zh_CN --output ^".\Mixed.mkv^" --language 0:und ^"^(^" ^".\audio.m4s^" ^"^)^" --language 0:und ^"^(^" ^".\video.m4s^" ^"^)^" --track-order 0:0,1:0')
+    system('"'+ToolDir+r' --ui-language zh_CN --output ^".\Mixed.mkv^" --language 0:und ^"^(^" ^".\audio.m4s^" ^"^)^" --language 0:und ^"^(^" ^".\video.m4s^" ^"^)^" --track-order 0:0,1:0'+'"')
+    # command2 = [
+    #     ToolDir,
+    #     '--ui-language', 'zh_CN',
+    #     '--output', r'^".\Mixed.mkv^"'
+    #     '--language', '0:und', r'^"^(^" ^".\audio.m4s^" ^"^)^"' 
+    #     '--language', '0:und', r'^"^(^" ^".\video.m4s^" ^"^)^"',
+    #     '--track-order', '0:0,1:0'
+    # ]
+    # Log(1,subprocess.run(command2, capture_output=True, text=True, cwd=getcwd()))
+
     for char in special_chars:
         title = title.replace(char," ")
+
+    m='"'+MetaDataToolDir+r' ^".\Mixed.mkv^" --set "title='+bvid+' '+title+'"'
+    print(m)
+    system(m)
+    
     if len(title1)!=len(title):
         Log(1,f"Deleted Special Characters from [{title1}] to [{title}] at {Dir}")
     f=f'move mixed.mkv "{downpath}\\{title}.mkv"'
@@ -131,7 +141,7 @@ def Dos(Dir):
 Wlist=WorkList()
 Log(1,Wlist)
 if(not path.exists(downpath)):
-    system(f"md {downpath}")
+    system(f"md \"{downpath}\"")
 for i in Wlist:
     try:
         Dos(i)
