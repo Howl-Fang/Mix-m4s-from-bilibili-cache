@@ -1,10 +1,9 @@
 #Mix By HF
 #Multi-Process
 
-from os import system, getcwd, chdir, path, makedirs
+from os import system, getcwd, chdir, path, makedirs, remove
 from glob import glob
 import json
-import shutil
 import subprocess
 import sys
 from time import sleep
@@ -93,6 +92,7 @@ def Dos(Dir):
     if len(title1)!=len(title):
         Log(1,f"Deleted Special Characters from [{title1}] to [{title}] at {Dir}")
 
+    f=path.join(downpath,title+".mkv")
     command=[
         "ffmpeg","-y",
         "-i","audio.m4s",
@@ -103,16 +103,14 @@ def Dos(Dir):
         "-metadata",f"title={bvid} {title}",
         "-metadata:s:a:0","language=und",
         "-metadata:s:v:0","language=und",
-        "Mixed.mkv"
+        f
     ]
     print(command)
     result=subprocess.run(command,capture_output=True,text=True)
     if result.returncode!=0:
+        if path.exists(f):
+            remove(f)
         raise Exception("ffmpeg: "+result.stderr.strip()[-1000:])
-
-    f=path.join(downpath,title+".mkv")
-    print(f'Move Mixed.mkv to "{f}"')
-    shutil.move("Mixed.mkv",f)
 
 Wlist=WorkList()
 Log(1,Wlist)
@@ -130,11 +128,11 @@ else:
 
 '''
 这里使用ffmpeg进行混合, 需要ffmpeg已经加入环境变量PATH
+ffmpeg直接输出到下载文件夹, 失败时删除未完成的文件
 用replace方法替换掉文件名中不能出现的特殊字符
 Windows用winreg调取downloads文件夹位置, {374DE290-123F-4565-9164-39C4925E467B}代表下载文件夹目录
 macOS/Linux使用~/Downloads
 上一级文件夹的json文件包含视频名称
-shutil.move可以在移动的同时重命名
 os.chdir(path)函数用于更改当前工作目录到指定的目录
 os.getcwd()函数用来遍历文件
 
